@@ -1,0 +1,29 @@
+heat_template_version: queens
+
+resources:
+  flavor_m1_master:
+    type: OS::Nova::Flavor
+    properties:
+      disk: 10
+      is_public: true
+      name: m1.master
+      ram: 8120
+      vcpus: 4
+
+  flavor_m1_node:
+    type: OS::Nova::Flavor
+    properties:
+      disk: 10
+      is_public: true
+      name: m1.node
+      ram: 4096
+      vcpus: 2
+
+  flavor_m1_bastion:
+    type: OS::Nova::Flavor
+    properties:
+      disk: 10
+      is_public: true
+      name: m1.bastion
+      ram: 4096
+      vcpus: 2

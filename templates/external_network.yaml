@@ -1,0 +1,114 @@
+heat_template_version: queens
+
+parameters:
+  shared_ip_version:
+    type: number
+    default: 4
+
+  external_network:
+    type: string
+    default: external_network
+
+  external_physical_network:
+    type: string
+    default: datacentre
+
+  external_subnet:
+    type: string
+    default: external_subnet
+
+  external_subnet_cidr:
+    type: string
+    default: 10.0.0.0/24
+
+  external_subnet_dns:
+    type: string
+    default: 10.0.0.1
+
+  external_subnet_gateway:
+    type: string
+    default: 10.0.0.1
+
+  internal_network:
+    type: string
+    default: internal_network
+
+  internal_subnet:
+    type: string
+    default: internal_subnet
+
+  internal_subnet_cidr:
+    type: string
+    default: 192.168.0.0/24
+
+  internal_subnet_dns:
+    type: string
+    default: 10.0.0.1
+
+  internal_router_name:
+    type: string
+    default: internal_router
+
+  internal_gw_name:
+    type: string
+    default: internal_gw_port
+
+  internal_gw_ip:
+    type: string
+    default: 192.168.0.1
+
+resources:
+  shared_external_network:
+    type: OS::Neutron::ProviderNet
+    properties:
+      name: { get_param: external_network }
+      router_external: true
+      physical_network: { get_param: external_physical_network }
+      network_type: flat
+
+  shared_internal_network:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: internal_network }
+
+  shared_external_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      allocation_pools: [{"start": 10.0.0.101, "end": 10.0.0.115}]
+      cidr: { get_param: external_subnet_cidr }
+      dns_nameservers: [ { get_param: external_subnet_dns} ]
+      enable_dhcp: false
+      gateway_ip: { get_param: external_subnet_gateway }
+      ip_version: { get_param: shared_ip_version }
+      name: { get_param: external_subnet }
+      network: { get_resource: shared_external_network }
+
+  shared_internal_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      cidr: { get_param: internal_subnet_cidr }
+      dns_nameservers: [ { get_param: internal_subnet_dns} ]
+      enable_dhcp: true
+      gateway_ip: { get_param: internal_gw_ip }
+      ip_version: { get_param: shared_ip_version }
+      name: { get_param: internal_subnet }
+      network: { get_resource: shared_internal_network }
+
+  shared_internal_router:
+    type: OS::Neutron::Router
+    properties:
+      name: { get_param: internal_router_name }
+
+  shared_internal_router_interface1:
+    depends_on: shared_internal_router
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: shared_internal_router }
+      port_id: { get_resource: internal_gw_port }
+
+  internal_gw_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: shared_internal_network }
+      fixed_ips: [{"ip_address": { get_param: internal_gw_ip }, "subnet_id": { get_resource: shared_internal_subnet } }]
+      name: { get_param: internal_gw_name }

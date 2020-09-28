@@ -1,0 +1,32 @@
+heat_template_version: queens
+
+parameters:
+  openshift_project_name:
+    type: string
+    default: ocp311
+
+  openshift_project_domain:
+    type: string
+    default: default
+
+  openshift_project_description:
+    type: string
+    default: Project for OpenShift deployment
+
+resources:
+  openshift_project:
+    type: OS::Keystone::Project
+    properties:
+      description: { get_param: openshift_project_description }
+      domain: { get_param: openshift_project_domain }
+      enabled: true
+      name: { get_param: openshift_project_name }
+
+  user_assignment_openshift_admin:
+    depends_on: openshift_project
+    type: OS::Keystone::UserRoleAssignment
+    properties:
+      roles:
+      - project: { get_resource: openshift_project }
+        role: _member_
+      user: admin
